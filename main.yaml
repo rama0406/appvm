@@ -1,0 +1,16 @@
+trigger:
+  - main
+
+pool:
+  name: test-agent  # Replace with your custom agent pool name
+
+variables:
+  TF_VERSION: '1.6.0'
+
+steps:
+  - script: |
+      terraform init
+      terraform plan -out=tfplan
+      terraform apply -auto-approve tfplan
+    displayName: 'Run Terraform'
+    workingDirectory: $(System.DefaultWorkingDirectory)/terraform
