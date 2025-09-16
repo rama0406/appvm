@@ -3,9 +3,10 @@ variable "location" {
 }
 
 variable "admin_username" {
-  default = "azureuser"
+  default = "ubuntuadmin"
 }
 
-variable "admin_password" {
-  default = "P@ssw0rd1234!"
+variable "ssh_public_key" {
+  description = "SSH public key for VM access"
+  type        = string
 }
