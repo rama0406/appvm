@@ -13,4 +13,4 @@ steps:
       terraform plan -out=tfplan
       terraform apply -auto-approve tfplan
     displayName: 'Run Terraform'
-    workingDirectory: $(System.DefaultWorkingDirectory)/terraform
+    workingDirectory: $(System.DefaultWorkingDirectory)/appvm
