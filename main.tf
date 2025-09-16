@@ -1,31 +1,24 @@
 resource "azurerm_resource_group" "rg" {
-  name     = "vm-rg"
+  name     = "ubuntu-rg"
   location = var.location
 }
 
 resource "azurerm_virtual_network" "vnet" {
-  name                = "vm-vnet"
+  name                = "ubuntu-vnet"
   address_space       = ["10.0.0.0/16"]
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
 }
 
 resource "azurerm_subnet" "subnet" {
-  name                 = "vm-subnet"
+  name                 = "ubuntu-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
 }
 
-resource "azurerm_public_ip" "public_ip" {
-  name                = "vm-public-ip"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
-  allocation_method   = "Dynamic"
-}
-
 resource "azurerm_network_interface" "nic" {
-  name                = "vm-nic"
+  name                = "ubuntu-nic"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -33,28 +26,47 @@ resource "azurerm_network_interface" "nic" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.public_ip.id
   }
 }
 
-resource "azurerm_windows_virtual_machine" "vm" {
-  name                = "vm-win"
+resource "azurerm_linux_virtual_machine" "vm" {
+  name                = "ubuntu-vm"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
-  size                = "Standard_DS1_v2"
+  size                = "Standard_B1s"
   admin_username      = var.admin_username
-  admin_password      = var.admin_password
-  network_interface_ids = [
-    azurerm_network_interface.nic.id,
-  ]
+  network_interface_ids = [azurerm_network_interface.nic.id]
+
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
   }
+
   source_image_reference {
-    publisher = "MicrosoftWindowsServer"
-    offer     = "WindowsServer"
-    sku       = "2022-Datacenter"
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-focal"
+    sku       = "20_04-lts"
     version   = "latest"
   }
+
+  admin_ssh_key {
+    username   = var.admin_username
+    public_key = var.ssh_public_key
+  }
+
+  boot_diagnostics {
+    storage_account_uri = azurerm_storage_account.diag.primary_blob_endpoint
+  }
+}
+
+resource "azurerm_storage_account" "diag" {
+  name                     = "ubuntudiag${random_id.suffix.hex}"
+  resource_group_name      = azurerm_resource_group.rg.name
+  location                 = var.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "random_id" "suffix" {
+  byte_length = 4
 }
